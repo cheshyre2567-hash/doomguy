@@ -30,15 +30,23 @@ def test_look_sequence_center_left_center_right():
     ]
 
 
-def test_pain_frame_uses_current_look_direction():
+def test_pain_frame_uses_health_bucket_not_look_direction():
     eng = DoomguyFaceEngine()
 
     # First frame is center.
     eng.update(100)
-    # Health drops on second tick (left look), so pain should be left.
+    # Health drops on second tick; pain should use the current health bucket.
     st = eng.update(95)
     assert st.is_pain is True
-    assert st.frame_name == "STFPAIN0"
+    assert st.frame_name == "STFOUCH0"
+
+
+def test_pain_frame_uses_low_health_bucket():
+    eng = DoomguyFaceEngine()
+
+    st = eng.update(10)
+    assert st.is_pain is True
+    assert st.frame_name == "STFOUCH4"
 
 
 def test_dead_frame_at_zero_health():
