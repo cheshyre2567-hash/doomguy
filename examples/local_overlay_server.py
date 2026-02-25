@@ -130,14 +130,6 @@ class Handler(BaseHTTPRequestHandler):
         payload = json.loads(raw.decode("utf-8") if raw else "{}")
 
         health_percent = int(payload.get("health_percent", 100))
-        confidence = float(payload.get("confidence", 1.0))
-
-        if confidence < 0.70:
-            with state_lock:
-                held = dict(latest)
-            self._send_json(HTTPStatus.ACCEPTED, {"held": True, "state": held})
-            return
-
         st = engine.update(max(0, min(100, health_percent)))
         out = {
             "frame": st.frame_name,
