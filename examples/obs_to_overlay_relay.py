@@ -163,10 +163,10 @@ def main() -> None:
     ap.add_argument("--overlay-url", default="http://127.0.0.1:8765/v1/health-sample")
     ap.add_argument(
         "--source-name",
-        default="HUD_CAPTURE_SCENE",
+        default="",
         help=(
-            "OBS scene/source to screenshot. Use your full scene (e.g. HUD_CAPTURE_SCENE) "
-            "for stable canvas-space coordinates."
+            "OBS scene/source to screenshot. Empty uses profile obs_scene_name "
+            "(recommended for stable canvas-space coordinates)."
         ),
     )
     ap.add_argument("--image-width", type=int, default=0, help="Screenshot width (must be >=8). 0 = auto")
@@ -174,7 +174,8 @@ def main() -> None:
     args = ap.parse_args()
 
     profile = load_profile(Path(args.profile_path), args.profile)
-    source_name = args.source_name
+    scene_name = profile.get("obs_scene_name", "HUD_CAPTURE_SCENE")
+    source_name = args.source_name or scene_name
 
     obs_host = os.getenv("OBS_HOST", "127.0.0.1")
     obs_port = int(os.getenv("OBS_PORT", "4455"))

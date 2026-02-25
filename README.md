@@ -82,6 +82,13 @@ For coordinate sanity, keep screenshots on scene-canvas space by sampling the sc
 python examples/obs_to_overlay_relay.py --profile game-example-line --source-name HUD_CAPTURE_SCENE
 ```
 
+
+For coordinate calibration debugging, run the 30-second overlay helper (writes `debug_last_frame.png` with start/end markers and line):
+
+```bash
+python examples/obs_to_overlay_debug.py --profile game-example-line
+```
+
 If you previously saw `GetSourceScreenshot ... imageWidth ... minimum of 8`, pull latest code and rerun.
 This script now auto-uses OBS base resolution. You can also force size explicitly:
 
