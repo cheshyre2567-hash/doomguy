@@ -76,6 +76,13 @@ pip install obsws-python opencv-python numpy requests
 python examples/obs_to_overlay_relay.py --profile game-example-line
 ```
 
+If you previously saw `GetSourceScreenshot ... imageWidth ... minimum of 8`, pull latest code and rerun.
+This script now auto-uses OBS base resolution. You can also force size explicitly:
+
+```bash
+python examples/obs_to_overlay_relay.py --profile game-example-line --image-width 1920 --image-height 1080
+```
+
 4. In OBS Browser Source `OVERLAY_FACE_OUTPUT`, set URL:
 
 ```text

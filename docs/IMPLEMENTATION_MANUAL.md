@@ -516,6 +516,7 @@ export OBS_PASSWORD='your_password'
 Troubleshooting:
 
 - If relay cannot connect, verify OBS websocket is enabled and port/password are correct.
+- If you get `GetSourceScreenshot ... imageWidth ... minimum of 8`, use updated script defaults or pass `--image-width 1920 --image-height 1080`.
 - If health is noisy, switch to `sampling_mode: "line"` and tune `bar_thickness` + HSV.
 - If overlay does not update, test `GET http://127.0.0.1:8765/v1/face-state` in browser.
 

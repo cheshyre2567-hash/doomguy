@@ -160,10 +160,13 @@ def main() -> None:
     ap.add_argument("--profile-path", default=str(DEFAULT_PROFILE_PATH))
     ap.add_argument("--fps", type=float, default=10.0)
     ap.add_argument("--overlay-url", default="http://127.0.0.1:8765/v1/health-sample")
+    ap.add_argument("--source-name", default="GAME_FEED", help="OBS source to screenshot")
+    ap.add_argument("--image-width", type=int, default=0, help="Screenshot width (must be >=8). 0 = auto")
+    ap.add_argument("--image-height", type=int, default=0, help="Screenshot height (must be >=8). 0 = auto")
     args = ap.parse_args()
 
     profile = load_profile(Path(args.profile_path), args.profile)
-    source_name = "GAME_FEED"
+    source_name = args.source_name
 
     obs_host = os.getenv("OBS_HOST", "127.0.0.1")
     obs_port = int(os.getenv("OBS_PORT", "4455"))
@@ -171,11 +174,34 @@ def main() -> None:
 
     client = obs.ReqClient(host=obs_host, port=obs_port, password=obs_password, timeout=5)
 
+    # OBS websocket requires imageWidth/imageHeight >= 8 for GetSourceScreenshot.
+    if args.image_width >= 8 and args.image_height >= 8:
+        shot_w, shot_h = args.image_width, args.image_height
+    else:
+        video = client.get_video_settings()
+        base_w = getattr(video, "base_width", getattr(video, "baseWidth", 1920))
+        base_h = getattr(video, "base_height", getattr(video, "baseHeight", 1080))
+        shot_w = max(8, int(base_w))
+        shot_h = max(8, int(base_h))
+
     period = 1.0 / max(1.0, args.fps)
-    print(f"Relay started: profile={args.profile}, sampling_mode={profile.get('sampling_mode', 'roi')}")
+    print(
+        f"Relay started: profile={args.profile}, sampling_mode={profile.get('sampling_mode', 'roi')}, "
+        f"source={source_name}, screenshot={shot_w}x{shot_h}"
+    )
 
     while True:
-        shot = client.get_source_screenshot(source_name, "png", 0, 0, 100)
+        try:
+            shot = client.get_source_screenshot(source_name, "png", shot_w, shot_h, 100)
+        except Exception as exc:
+            msg = str(exc)
+            if "imageWidth" in msg or "minimum of `8" in msg:
+                raise RuntimeError(
+                    "OBS rejected screenshot size. Use --image-width/--image-height >= 8, "
+                    "or omit them to auto-use OBS base resolution."
+                ) from exc
+            raise
+
         frame_bgr = decode_obs_data_url(shot.image_data)
 
         mode = profile.get("sampling_mode", "roi")
