@@ -33,4 +33,60 @@ python -m pytest -q
 4. Server uses `DoomguyFaceEngine` to resolve current frame.
 5. Browser source renders that frame PNG.
 
+For a beginner-friendly step-by-step implementation guide, read `docs/IMPLEMENTATION_MANUAL.md`.
+
 For full setup and internal coordination standards, read `docs/OBS_SCENE_AND_RELAY_SPEC.md`.
+
+## Local end-to-end demo (OBS Browser Source + relay)
+
+Run a minimal local relay/overlay server:
+
+```bash
+python examples/local_overlay_server.py
+```
+
+Then:
+
+1. Set OBS Browser Source (`OVERLAY_FACE_OUTPUT`) URL to `http://127.0.0.1:8765/overlay`.
+2. Send health samples to `POST http://127.0.0.1:8765/v1/health-sample`.
+
+Example test sample:
+
+```bash
+curl -X POST http://127.0.0.1:8765/v1/health-sample \
+  -H 'Content-Type: application/json' \
+  -d '{"game_id":"local","health_percent":73,"confidence":0.95}'
+```
+
+
+## Run OBS -> relay -> overlay end-to-end
+
+1. Start local overlay server:
+
+```bash
+python examples/local_overlay_server.py
+```
+
+2. Enable OBS WebSocket (Tools -> WebSocket Server Settings).
+
+3. Start OBS relay bridge (reads `GAME_FEED`, computes health, POSTs to server):
+
+```bash
+pip install obsws-python opencv-python numpy requests
+python examples/obs_to_overlay_relay.py --profile game-example-line
+```
+
+4. In OBS Browser Source `OVERLAY_FACE_OUTPUT`, set URL:
+
+```text
+http://127.0.0.1:8765/overlay
+```
+
+If OBS websocket needs password/host/port, set env vars:
+
+```bash
+export OBS_HOST=127.0.0.1
+export OBS_PORT=4455
+export OBS_PASSWORD='your_password'
+```
+
