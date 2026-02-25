@@ -54,13 +54,13 @@ class DoomguyFaceEngine:
         """
 
         h = max(0, min(100, int(health_percent)))
-        if h >= 80:
+        if h >= 90:
             return 0
-        if h >= 60:
+        if h >= 80:
             return 1
-        if h >= 40:
+        if h >= 50:
             return 2
-        if h >= 20:
+        if h >= 30:
             return 3
         return 4
 
