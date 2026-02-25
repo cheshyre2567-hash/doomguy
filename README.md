@@ -36,3 +36,25 @@ python -m pytest -q
 For a beginner-friendly step-by-step implementation guide, read `docs/IMPLEMENTATION_MANUAL.md`.
 
 For full setup and internal coordination standards, read `docs/OBS_SCENE_AND_RELAY_SPEC.md`.
+
+## Local end-to-end demo (OBS Browser Source + relay)
+
+Run a minimal local relay/overlay server:
+
+```bash
+python examples/local_overlay_server.py
+```
+
+Then:
+
+1. Set OBS Browser Source (`OVERLAY_FACE_OUTPUT`) URL to `http://127.0.0.1:8765/overlay`.
+2. Send health samples to `POST http://127.0.0.1:8765/v1/health-sample`.
+
+Example test sample:
+
+```bash
+curl -X POST http://127.0.0.1:8765/v1/health-sample \
+  -H 'Content-Type: application/json' \
+  -d '{"game_id":"local","health_percent":73,"confidence":0.95}'
+```
+

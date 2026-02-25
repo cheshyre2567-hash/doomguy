@@ -440,3 +440,44 @@ If all six are true, your implementation is production-ready.
 - System contract: `docs/OBS_SCENE_AND_RELAY_SPEC.md`
 - Engine module: `doomguy_overlay_engine.py`
 - Profile template: `config/game_profiles.example.json`
+
+## Step 13: Run a minimal local server and connect OBS
+
+If you want a working local baseline before building your full relay, use:
+
+```bash
+python examples/local_overlay_server.py
+```
+
+This starts:
+
+- Overlay page: `http://127.0.0.1:8765/overlay`
+- Face state endpoint: `GET /v1/face-state`
+- Health ingest endpoint: `POST /v1/health-sample`
+
+OBS setup:
+
+1. Open your `OVERLAY_FACE_OUTPUT` Browser Source.
+2. Set URL to `http://127.0.0.1:8765/overlay`.
+3. Keep source visible in the rendered scene graph.
+
+Quick health test from terminal:
+
+```bash
+curl -X POST http://127.0.0.1:8765/v1/health-sample \
+  -H 'Content-Type: application/json' \
+  -d '{"game_id":"local","health_percent":100,"confidence":0.95}'
+
+curl -X POST http://127.0.0.1:8765/v1/health-sample \
+  -H 'Content-Type: application/json' \
+  -d '{"game_id":"local","health_percent":60,"confidence":0.95}'
+
+curl -X POST http://127.0.0.1:8765/v1/health-sample \
+  -H 'Content-Type: application/json' \
+  -d '{"game_id":"local","health_percent":25,"confidence":0.95}'
+```
+
+You should see the Doomguy frame update in OBS as health changes.
+
+---
+
