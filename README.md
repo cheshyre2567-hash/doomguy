@@ -33,4 +33,6 @@ python -m pytest -q
 4. Server uses `DoomguyFaceEngine` to resolve current frame.
 5. Browser source renders that frame PNG.
 
+For a beginner-friendly step-by-step implementation guide, read `docs/IMPLEMENTATION_MANUAL.md`.
+
 For full setup and internal coordination standards, read `docs/OBS_SCENE_AND_RELAY_SPEC.md`.
