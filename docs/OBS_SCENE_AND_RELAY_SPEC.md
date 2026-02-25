@@ -14,12 +14,130 @@ Inside this scene add these sources (exact names):
 2. `HEALTH_ROI_GUIDE` (optional rectangle for setup only)
 3. `OVERLAY_FACE_OUTPUT` (browser source that renders Doomguy frame)
 
+
+### Must this scene be active on stream?
+
+`HUD_CAPTURE_SCENE` does **not** need to be your top-level live scene. It can run in the background **as long as OBS is rendering it**.
+
+Recommended setup:
+
+1. Build `HUD_CAPTURE_SCENE` with the required sources (`GAME_FEED`, `OVERLAY_FACE_OUTPUT`, etc.).
+2. In your normal stream scene (for example `Live Scene`), add `HUD_CAPTURE_SCENE` as a **Scene Source**.
+3. Keep that scene item visible (it can be cropped/scaled/positioned as needed).
+
+If a scene is never rendered by OBS (not active and not referenced by an active scene), browser/script updates tied to that scene may pause depending on source settings.
+
+
+### Source layout FAQ (important)
+
+**Q1: Does `GAME_FEED` need to be the entire screen?**
+
+No. It can be either:
+
+- full game capture (recommended default), or
+- a cropped capture focused around HUD areas.
+
+The only hard requirement is that the configured `health_roi` coordinates correctly map to visible pixels for the health bar in the scene's canvas space.
+
+**Q2: What is `HEALTH_ROI_GUIDE` in OBS sources?**
+
+`HEALTH_ROI_GUIDE` is a helper source (usually a rectangle/shape) used during setup to visually mark the ROI area while you calibrate.
+
+Recommended source type in OBS: **Color Source** named exactly `HEALTH_ROI_GUIDE`.
+
+Quick add steps:
+
+1. Sources -> `+` -> **Color Source**
+2. Name: `HEALTH_ROI_GUIDE`
+3. Use a visible color and partial opacity
+4. Resize/move it to match the bar, then copy transform values
+
+- It is optional.
+- It should usually be hidden/removed for final live output.
+- It does not drive logic by itself; your relay uses configured ROI coordinates.
+
+**Q3: Must `OVERLAY_FACE_OUTPUT` be inside `HUD_CAPTURE_SCENE`?**
+
+For this project contract, yes: keep `OVERLAY_FACE_OUTPUT` defined in `HUD_CAPTURE_SCENE` so naming and integration stay consistent.
+
+If your top-level stream scene is `Live Scene`, include `HUD_CAPTURE_SCENE` there as a Scene Source. That way the overlay still appears in your live scene without duplicating configuration.
+
 ### Health ROI (region of interest)
 
 For each game, define one rectangular ROI that bounds the health bar:
 
 - `x`, `y`, `width`, `height`
 - coordinate space: pixels in base canvas resolution (for example 1920x1080)
+
+
+#### Practical calibration workflow (x/y/width/height + HSV)
+
+1. Keep `GAME_FEED` in its final transform (same position/scale you stream with).
+2. Use `HEALTH_ROI_GUIDE` to box only the health bar fill region.
+3. Read the guide transform values from OBS and copy them to `health_roi`.
+4. Sample filled bar pixels and choose `fill_color_hsv.low/high` bounds that include fill and exclude background.
+5. Verify at full health and near-empty health before finalizing profile values.
+
+
+
+OBS transform note:
+
+- If OBS shows `Position/Size/Crop` instead of x/y/width/height labels, use the final displayed rectangle in canvas space as ROI values.
+- Avoid rotated ROI guides for calibration; keep guide rotation at 0° and use an axis-aligned box even when the HUD bar itself is diagonal.
+
+Note for angled HUD bars:
+
+- ROI is still a standard axis-aligned rectangle in canvas space.
+- Use the guide source transform values, not diagonal distance measurements.
+- Include slight padding so fill detection remains stable under motion/compression.
+
+
+Recommended compromise for slanted bars:
+
+- Keep ROI axis-aligned, full bar length, and relatively thin.
+- Add small padding (2-4 px), but avoid large top/bottom background capture.
+- If noise persists, reduce ROI height first, then tighten HSV S/V bounds.
+
+### Optional advanced mode: line-based sampling (recommended for slanted bars)
+
+If your health bar is heavily diagonal or curved, line-based sampling is often more stable than rectangular ROI.
+
+Define these fields in your game profile:
+
+- `sampling_mode`: `"line"`
+- `bar_start`: `{ "x": x1, "y": y1 }`
+- `bar_end`: `{ "x": x2, "y": y2 }`
+- `bar_thickness`: integer pixels (recommended 3-7)
+- `line_samples`: number of steps along the bar (recommended 150-300, start 200)
+
+How it works:
+
+1. Compute direction vector from `bar_start` to `bar_end`.
+2. Step along that vector for `line_samples` points.
+3. At each step, sample a short perpendicular strip (`bar_thickness`).
+4. Average HSV for the strip and classify `filled` vs `empty`.
+5. Health % = `(index_of_last_filled_step / (line_samples - 1)) * 100`.
+
+Benefits:
+
+- Ignores most background above/below the bar.
+- Works well with slanted bars where rectangle ROI includes too much noise.
+- Keeps profile compact (two points + thickness).
+
+Pseudocode:
+
+```python
+u = normalize(bar_end - bar_start)               # along-bar direction
+n = perpendicular(u)                              # strip direction
+last_filled = -1
+for i in range(line_samples):
+    t = i / (line_samples - 1)
+    p = bar_start + u * (t * bar_length)
+    hsv_avg = mean_hsv(sample_strip(center=p, normal=n, thickness=bar_thickness))
+    if is_filled(hsv_avg, hsv_low, hsv_high):
+        last_filled = i
+health_percent = 0 if last_filled < 0 else round(100 * last_filled / (line_samples - 1))
+```
 
 During calibration, verify:
 
@@ -33,7 +151,8 @@ Each game uses a profile object with:
 
 - `id`: unique game key
 - `obs_scene_name`: usually `HUD_CAPTURE_SCENE`
-- `health_roi`: `x/y/width/height`
+- `health_roi`: `x/y/width/height` (for `sampling_mode="roi"`, default)
+- OR line mode fields: `bar_start`, `bar_end`, `bar_thickness`, optional `line_samples`
 - `fill_color_hsv`: low/high HSV threshold for the filled portion
 - `direction`: `left_to_right` or `right_to_left`
 - `smoothing_window`: rolling sample count (recommended 5)

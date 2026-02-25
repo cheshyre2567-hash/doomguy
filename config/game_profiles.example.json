@@ -3,10 +3,23 @@
     {
       "id": "game-example-ltr",
       "obs_scene_name": "HUD_CAPTURE_SCENE",
-      "health_roi": { "x": 120, "y": 980, "width": 320, "height": 24 },
+      "health_roi": {
+        "x": 120,
+        "y": 980,
+        "width": 320,
+        "height": 24
+      },
       "fill_color_hsv": {
-        "low": [0, 120, 70],
-        "high": [10, 255, 255]
+        "low": [
+          0,
+          120,
+          70
+        ],
+        "high": [
+          10,
+          255,
+          255
+        ]
       },
       "direction": "left_to_right",
       "smoothing_window": 5,
@@ -15,14 +28,57 @@
     {
       "id": "game-example-rtl",
       "obs_scene_name": "HUD_CAPTURE_SCENE",
-      "health_roi": { "x": 1420, "y": 980, "width": 320, "height": 24 },
+      "health_roi": {
+        "x": 1420,
+        "y": 980,
+        "width": 320,
+        "height": 24
+      },
       "fill_color_hsv": {
-        "low": [45, 80, 80],
-        "high": [90, 255, 255]
+        "low": [
+          45,
+          80,
+          80
+        ],
+        "high": [
+          90,
+          255,
+          255
+        ]
       },
       "direction": "right_to_left",
       "smoothing_window": 5,
       "damage_drop_threshold": 3
+    },
+    {
+      "id": "game-example-line",
+      "obs_scene_name": "HUD_CAPTURE_SCENE",
+      "sampling_mode": "line",
+      "bar_start": {
+        "x": 268,
+        "y": 768
+      },
+      "bar_end": {
+        "x": 687,
+        "y": 740
+      },
+      "bar_thickness": 5,
+      "line_samples": 200,
+      "fill_color_hsv": {
+        "low": [
+          80,
+          40,
+          70
+        ],
+        "high": [
+          105,
+          255,
+          255
+        ]
+      },
+      "direction": "left_to_right",
+      "smoothing_window": 5,
+      "damage_drop_threshold": 2
     }
   ]
 }
