@@ -88,6 +88,59 @@ Why exact naming matters: your relay and debugging workflow depend on consistent
 
 ---
 
+
+## Quick FAQ: Does `HUD_CAPTURE_SCENE` have to be the live scene?
+
+No. It does **not** have to be your stream's top-level scene. You can keep using your existing `Live Scene`.
+
+Use this pattern:
+
+1. Build `HUD_CAPTURE_SCENE` once (with the required source names).
+2. Add `HUD_CAPTURE_SCENE` into `Live Scene` as a **Scene Source**.
+3. Keep it visible so OBS continues rendering/updating it.
+
+In short: it can run in the background, but it must still be part of the currently rendered scene graph.
+
+---
+
+
+## Quick FAQ: Source setup details
+
+### Does `GAME_FEED` have to be full-screen?
+
+No. You can use either full-screen game capture or a cropped capture.
+
+Rule: whatever you choose, your ROI coordinates must still point to the health bar correctly in OBS canvas coordinates.
+
+### What is `HEALTH_ROI_GUIDE` in the source list?
+
+It is a visual setup aid (rectangle/shape) to help you place and verify the health ROI during calibration.
+
+**Recommended OBS source type:** `Color Source` (best default)
+
+How to add it in OBS:
+
+1. In `HUD_CAPTURE_SCENE`, click `+` in **Sources**.
+2. Choose **Color Source**.
+3. Name it exactly `HEALTH_ROI_GUIDE`.
+4. Pick a bright color (green/magenta), set opacity around 25-40% so you can still see the HUD under it.
+5. Resize/move it to cover the health bar fill region.
+6. Right-click it -> **Transform** -> **Edit Transform** and copy Left/Top/Width/Height into your profile.
+
+Alternative source types also work (for example `Image` with a transparent rectangle), but `Color Source` is simplest for most users.
+
+- optional source
+- usually hidden in production
+- not used directly by the engine; it is for humans during setup
+
+### Does `OVERLAY_FACE_OUTPUT` have to be on `HUD_CAPTURE_SCENE`?
+
+For the documented contract, yes. Keep it in `HUD_CAPTURE_SCENE`.
+
+If you stream from `Live Scene`, add `HUD_CAPTURE_SCENE` into `Live Scene` as a Scene Source. This gives you the overlay in your live output while keeping one canonical place to configure sources.
+
+---
+
 ## Step 4: Define health ROI for your game
 
 ROI = rectangle around health bar in OBS base-canvas pixel coordinates.
@@ -107,6 +160,136 @@ Calibration target:
 
 ---
 
+### Exact method: how to find `x`, `y`, `width`, `height`, and HSV
+
+Use this quick process once you can see your game in OBS:
+
+1. In OBS, set your base canvas (for example 1920x1080) and make sure `GAME_FEED` is positioned exactly how it will be used live.
+2. Turn on/add `HEALTH_ROI_GUIDE` (a rectangle shape). Move and resize it until it tightly covers only the health bar fill area.
+3. Open **Edit Transform** on `HEALTH_ROI_GUIDE` and copy the rectangle values:
+   - `x` = Left
+   - `y` = Top
+   - `width`
+   - `height`
+4. Put those numbers into `health_roi` in your game profile.
+5. Determine bar direction:
+   - if the bar empties left-to-right, use `left_to_right`
+   - if the bar empties right-to-left, use `right_to_left`
+6. Determine HSV for the filled color:
+   - take a screenshot frame where health bar fill is clearly visible
+   - sample 5-10 pixels from the **filled** part of the bar
+   - convert sampled RGB values to HSV
+   - set `fill_color_hsv.low` slightly below minimum sampled H/S/V
+   - set `fill_color_hsv.high` slightly above maximum sampled H/S/V
+7. Validate threshold quality:
+   - at 100% health, threshold should detect ~95%+ of bar fill
+   - at near empty, threshold should detect <20%
+   - if background noise is detected, tighten S/V bounds first
+8. Run live checks at 100/75/50/25/10 health and adjust bounds in small increments.
+
+Starter HSV strategy (when unsure):
+
+- Red bars: start near `low=[0,120,70]`, `high=[10,255,255]`
+- Green bars: start near `low=[45,80,80]`, `high=[90,255,255]`
+
+Then tune to your game UI lighting/effects.
+
+
+### OBS "Edit Transform" field mapping (when you do not see x/y/width/height labels)
+
+Some OBS versions show these labels instead:
+
+- `Position` -> corresponds to top-left placement (`x`, `y`)
+- `Size` -> corresponds to displayed width/height after transform
+- `Crop Left/Right/Top/Bottom` -> trims the source area
+- `Rotation` -> rotates the source (avoid this for ROI calibration)
+
+For this project, keep ROI calibration simple and reliable:
+
+1. Set `HEALTH_ROI_GUIDE` rotation to `0.0` while capturing ROI values.
+2. Use an axis-aligned rectangle that covers the slanted bar region.
+3. Copy ROI from the guide's final top-left and size in canvas space.
+4. If you used crop on a full-screen color source, copy the **final displayed rectangle** (not the original 1920x1080 source size).
+
+If the bar is diagonal, that is OK: your ROI rectangle should be the smallest axis-aligned box that contains the bar fill.
+
+### If your health bar is angled/slanted on screen (important)
+
+In your screenshot, the bar appears slightly diagonal. Your `health_roi` is still an **axis-aligned rectangle** (`x`, `y`, `width`, `height`) in canvas coordinates.
+
+Use this method:
+
+1. Do **not** use the diagonal line length as ROI width.
+2. Position `HEALTH_ROI_GUIDE` as a normal rectangle that fully contains the fill region across the whole bar.
+3. Use **Edit Transform** values from the guide (Left/Top/Width/Height) as your ROI values.
+4. Keep a small margin (2-4 px) around the fill so camera shake/compression does not clip detection.
+5. If the slant causes extra background noise, tighten HSV S/V bounds and reduce ROI height slightly.
+
+
+Practical recommendation for your exact case (diagonal bar + cropped color source):
+
+- Do **not** rotate `HEALTH_ROI_GUIDE` for measurement. Keep rotation at 0°.
+- Build a thin axis-aligned rectangle around the bar (include small 2-4 px padding).
+- If background leaks into the ROI, keep narrowing ROI height and tighten HSV S/V bounds.
+- The ROI does not need to match the bar angle; HSV thresholding handles the diagonal fill inside the rectangle.
+
+
+### Middle ground for slanted bars (when tight ROI adds too much background)
+
+If a perfectly tight box is impossible because the bar is diagonal, use this compromise:
+
+1. Keep ROI axis-aligned and centered on the bar.
+2. Make ROI **long enough** to include full bar length.
+3. Make ROI **thin**: start around 1.5x to 2.0x the bar fill thickness.
+4. Keep only small vertical padding (2-4 px), not large top/bottom margins.
+5. Prefer extra width over extra height (height noise hurts more than width noise).
+6. Tighten HSV saturation/value limits first if rocks/grass/UI edges leak into mask.
+
+Practical target metrics:
+
+- Full health: detected fill ratio roughly 0.85-0.98 inside ROI
+- Near empty: detected fill ratio under ~0.20
+- Idle/no-hit moments: frame should be stable (no constant pain flicker)
+
+If you still get noisy detection, reduce ROI height by a few pixels and retest before changing width.
+
+Quick sanity check:
+
+- At full health, mask should cover nearly all fill segments.
+- At low health, mask should shrink cleanly from the configured direction (`left_to_right` or `right_to_left`).
+
+---
+
+### Alternative for diagonal bars: line-based sampling (best-practice option)
+
+If your relay supports it, this is usually the best method for slanted bars.
+
+Instead of rectangle ROI dimensions, define:
+
+- `BAR_START = (x1, y1)`
+- `BAR_END = (x2, y2)`
+- `BAR_THICKNESS = 3..7`
+- optional `LINE_SAMPLES = 200`
+
+Then:
+
+1. Sample along `BAR_START -> BAR_END` in equal increments.
+2. At each point, sample a tiny perpendicular strip (`BAR_THICKNESS`).
+3. Compute average HSV and classify filled/empty.
+4. Last filled sample index / total samples = health %.
+
+Why this helps:
+
+- It follows bar direction directly.
+- It minimizes background contamination from the top/bottom area.
+- It is more stable for angled HUD bars than large rectangular ROI.
+
+Suggested starting values:
+
+- `BAR_THICKNESS`: 5 px
+- `LINE_SAMPLES`: 200
+- HSV thresholds: same process as rectangle mode (sample filled pixels first).
+
 ## Step 5: Create a game profile
 
 Start from `config/game_profiles.example.json` and copy one profile.
@@ -115,7 +298,7 @@ For your game, set:
 
 - `id`
 - `obs_scene_name` (`HUD_CAPTURE_SCENE`)
-- `health_roi`
+- `health_roi` (ROI mode), or line fields `bar_start`/`bar_end`/`bar_thickness`
 - `fill_color_hsv` (low/high)
 - `direction` (`left_to_right` or `right_to_left`)
 - `smoothing_window` (start with `5`)
