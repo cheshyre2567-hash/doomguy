@@ -33,13 +33,36 @@ Each game uses a profile object with:
 
 - `id`: unique game key
 - `obs_scene_name`: usually `HUD_CAPTURE_SCENE`
-- `health_roi`: `x/y/width/height`
-- `fill_color_hsv`: low/high HSV threshold for the filled portion
+- Either simple fields:
+  - `health_roi`: `x/y/width/height`
+  - `fill_color_hsv`: low/high HSV threshold for the filled portion
+- Or multi-bar fields:
+  - `mode`: `segmented_stacked_bar`
+  - `rois`: per-channel ROI map (`shield`, `health`, `lost_health`)
+  - `channels`: per-channel HSV thresholds + semantics
+  - `derived`: formula hints for choosing broadcast health
 - `direction`: `left_to_right` or `right_to_left`
 - `smoothing_window`: rolling sample count (recommended 5)
 - `damage_drop_threshold`: minimum % drop to emit damage event (recommended 2)
 
 See `config/game_profiles.example.json` for a canonical template.
+
+
+### Multi-bar games (shield + health + recent damage)
+
+Some games (like Arc Raiders) expose multiple bars:
+
+- shield (blue)
+- health (white)
+- recently lost health (red chunk)
+
+For these games, use `mode: "segmented_stacked_bar"` and define separate ROIs + HSV thresholds per channel in the profile.
+
+Recommended behavior:
+
+- Drive Doomguy frame selection from `health.percent` (`stream_health_percent_formula`).
+- Optionally compute a separate survivability metric using shield+health for analytics.
+- Treat red/lost-health as a semantic channel (`damage_recent`) and not as current health.
 
 ## 3) Relay Payload OBS -> Server (required)
 

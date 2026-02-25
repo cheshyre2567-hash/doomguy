@@ -23,6 +23,50 @@
       "direction": "right_to_left",
       "smoothing_window": 5,
       "damage_drop_threshold": 3
+    },
+    {
+      "id": "arc-raiders",
+      "obs_scene_name": "HUD_CAPTURE_SCENE",
+      "mode": "segmented_stacked_bar",
+      "direction": "left_to_right",
+      "rois": {
+        "shield": { "x": 72, "y": 254, "width": 320, "height": 12 },
+        "health": { "x": 72, "y": 270, "width": 320, "height": 12 },
+        "lost_health": { "x": 72, "y": 270, "width": 320, "height": 12 }
+      },
+      "channels": {
+        "shield": {
+          "enabled": true,
+          "weight": 100,
+          "fill_color_hsv": {
+            "low": [85, 80, 80],
+            "high": [110, 255, 255]
+          }
+        },
+        "health": {
+          "enabled": true,
+          "weight": 100,
+          "fill_color_hsv": {
+            "low": [0, 0, 180],
+            "high": [180, 50, 255]
+          }
+        },
+        "lost_health": {
+          "enabled": true,
+          "semantic": "damage_recent",
+          "fill_color_hsv": {
+            "low": [0, 100, 80],
+            "high": [10, 255, 255]
+          }
+        }
+      },
+      "derived": {
+        "stream_health_percent_formula": "health.percent",
+        "composite_survivability_formula": "((shield.percent * shield.weight) + (health.percent * health.weight)) / (shield.weight + health.weight)"
+      },
+      "smoothing_window": 5,
+      "damage_drop_threshold": 2,
+      "confidence_floor": 0.7
     }
   ]
 }
