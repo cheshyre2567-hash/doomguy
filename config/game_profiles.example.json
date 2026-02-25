@@ -1,0 +1,28 @@
+{
+  "profiles": [
+    {
+      "id": "game-example-ltr",
+      "obs_scene_name": "HUD_CAPTURE_SCENE",
+      "health_roi": { "x": 120, "y": 980, "width": 320, "height": 24 },
+      "fill_color_hsv": {
+        "low": [0, 120, 70],
+        "high": [10, 255, 255]
+      },
+      "direction": "left_to_right",
+      "smoothing_window": 5,
+      "damage_drop_threshold": 2
+    },
+    {
+      "id": "game-example-rtl",
+      "obs_scene_name": "HUD_CAPTURE_SCENE",
+      "health_roi": { "x": 1420, "y": 980, "width": 320, "height": 24 },
+      "fill_color_hsv": {
+        "low": [45, 80, 80],
+        "high": [90, 255, 255]
+      },
+      "direction": "right_to_left",
+      "smoothing_window": 5,
+      "damage_drop_threshold": 3
+    }
+  ]
+}
