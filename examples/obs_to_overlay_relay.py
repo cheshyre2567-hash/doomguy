@@ -1,6 +1,7 @@
 """OBS -> Health Relay -> Doomguy overlay bridge.
 
-This example reads pixels from OBS `GAME_FEED`, estimates health_percent from either:
+This example reads pixels from OBS `HUD_CAPTURE_SCENE` (recommended), estimates
+health_percent from either:
 - rectangular ROI sampling, or
 - line-based sampling (recommended for diagonal bars)
 
@@ -13,7 +14,7 @@ Dependencies:
 OBS prerequisites:
 1) Enable obs-websocket in OBS (Tools -> WebSocket Server Settings)
 2) Set host/port/password below (or via env vars)
-3) Ensure `HUD_CAPTURE_SCENE` / `GAME_FEED` are visible in rendered scene graph
+3) Ensure `HUD_CAPTURE_SCENE` (or your chosen source) is visible in rendered scene graph
 
 Run:
     python examples/obs_to_overlay_relay.py --profile game-example-line
@@ -160,7 +161,14 @@ def main() -> None:
     ap.add_argument("--profile-path", default=str(DEFAULT_PROFILE_PATH))
     ap.add_argument("--fps", type=float, default=10.0)
     ap.add_argument("--overlay-url", default="http://127.0.0.1:8765/v1/health-sample")
-    ap.add_argument("--source-name", default="GAME_FEED", help="OBS source to screenshot")
+    ap.add_argument(
+        "--source-name",
+        default="HUD_CAPTURE_SCENE",
+        help=(
+            "OBS scene/source to screenshot. Use your full scene (e.g. HUD_CAPTURE_SCENE) "
+            "for stable canvas-space coordinates."
+        ),
+    )
     ap.add_argument("--image-width", type=int, default=0, help="Screenshot width (must be >=8). 0 = auto")
     ap.add_argument("--image-height", type=int, default=0, help="Screenshot height (must be >=8). 0 = auto")
     args = ap.parse_args()
@@ -174,6 +182,7 @@ def main() -> None:
 
     client = obs.ReqClient(host=obs_host, port=obs_port, password=obs_password, timeout=5)
 
+    scene_name = profile.get("obs_scene_name", "HUD_CAPTURE_SCENE")
     # OBS websocket requires imageWidth/imageHeight >= 8 for GetSourceScreenshot.
     if args.image_width >= 8 and args.image_height >= 8:
         shot_w, shot_h = args.image_width, args.image_height
@@ -183,6 +192,13 @@ def main() -> None:
         base_h = getattr(video, "base_height", getattr(video, "baseHeight", 1080))
         shot_w = max(8, int(base_w))
         shot_h = max(8, int(base_h))
+        if source_name != scene_name:
+            print(
+                "WARNING: auto screenshot size uses OBS base canvas. If --source-name is a "
+                "sub-source (for example GAME_FEED), coordinates are in resized screenshot "
+                "space and may feel off. Prefer --source-name "
+                f"{scene_name} or pass explicit --image-width/--image-height."
+            )
 
     period = 1.0 / max(1.0, args.fps)
     print(
@@ -215,7 +231,7 @@ def main() -> None:
             "timestamp_ms": int(time.time() * 1000),
             "health_percent": health,
             "confidence": round(float(confidence), 3),
-            "source": {"scene": profile.get("obs_scene_name", "HUD_CAPTURE_SCENE")},
+            "source": {"scene": scene_name},
         }
 
         requests.post(args.overlay_url, json=payload, timeout=1.0)
