@@ -183,6 +183,7 @@ def main() -> None:
 
     client = obs.ReqClient(host=obs_host, port=obs_port, password=obs_password, timeout=5)
 
+    scene_name = profile.get("obs_scene_name", "HUD_CAPTURE_SCENE")
     # OBS websocket requires imageWidth/imageHeight >= 8 for GetSourceScreenshot.
     if args.image_width >= 8 and args.image_height >= 8:
         shot_w, shot_h = args.image_width, args.image_height
