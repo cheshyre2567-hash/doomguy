@@ -69,11 +69,17 @@ python examples/local_overlay_server.py
 
 2. Enable OBS WebSocket (Tools -> WebSocket Server Settings).
 
-3. Start OBS relay bridge (reads `GAME_FEED`, computes health, POSTs to server):
+3. Start OBS relay bridge (reads `HUD_CAPTURE_SCENE` by default, computes health, POSTs to server):
 
 ```bash
 pip install obsws-python opencv-python numpy requests
 python examples/obs_to_overlay_relay.py --profile game-example-line
+```
+
+For coordinate sanity, keep screenshots on scene-canvas space by sampling the scene (default):
+
+```bash
+python examples/obs_to_overlay_relay.py --profile game-example-line --source-name HUD_CAPTURE_SCENE
 ```
 
 If you previously saw `GetSourceScreenshot ... imageWidth ... minimum of 8`, pull latest code and rerun.
@@ -96,4 +102,3 @@ export OBS_HOST=127.0.0.1
 export OBS_PORT=4455
 export OBS_PASSWORD='your_password'
 ```
-
