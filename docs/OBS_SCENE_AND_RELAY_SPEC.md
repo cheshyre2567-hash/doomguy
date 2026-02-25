@@ -262,3 +262,25 @@ Browser source behavior:
 - If confidence is low for >2 seconds, freeze last rendered frame.
 - If server has no data yet, start at `STFST01` (healthy center look).
 - If game profile is missing, reject with 400 and list available profiles.
+
+## 8) Running a practical local relay loop (reference)
+
+Reference scripts included in this repo:
+
+1. `python examples/local_overlay_server.py`
+   - Serves `/overlay`, `GET /v1/face-state`, and `POST /v1/health-sample`.
+2. `python examples/obs_to_overlay_relay.py --profile <profile_id>`
+   - Reads `GAME_FEED` from OBS via obs-websocket and POSTs health samples.
+
+Dependencies for relay script:
+
+```bash
+pip install obsws-python opencv-python numpy requests
+```
+
+OBS websocket configuration is read from env vars:
+
+- `OBS_HOST` (default `127.0.0.1`)
+- `OBS_PORT` (default `4455`)
+- `OBS_PASSWORD` (default empty)
+

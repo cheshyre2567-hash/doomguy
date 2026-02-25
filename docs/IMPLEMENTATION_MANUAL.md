@@ -481,3 +481,43 @@ You should see the Doomguy frame update in OBS as health changes.
 
 ---
 
+
+## Step 14: Read from OBS `GAME_FEED` and transmit health automatically
+
+Use the provided bridge script:
+
+```bash
+pip install obsws-python opencv-python numpy requests
+python examples/obs_to_overlay_relay.py --profile game-example-line
+```
+
+What it does:
+
+1. Connects to OBS via obs-websocket.
+2. Pulls screenshots from `GAME_FEED` at ~10 FPS.
+3. Computes `health_percent` using your profile (`roi` mode or `line` mode).
+4. Sends samples to `POST http://127.0.0.1:8765/v1/health-sample`.
+
+Required sequence:
+
+1. Start OBS and enable obs-websocket.
+2. Start `python examples/local_overlay_server.py`.
+3. Start relay bridge script above.
+4. Set `OVERLAY_FACE_OUTPUT` Browser Source URL to `http://127.0.0.1:8765/overlay`.
+
+Environment variables for OBS websocket (if needed):
+
+```bash
+export OBS_HOST=127.0.0.1
+export OBS_PORT=4455
+export OBS_PASSWORD='your_password'
+```
+
+Troubleshooting:
+
+- If relay cannot connect, verify OBS websocket is enabled and port/password are correct.
+- If health is noisy, switch to `sampling_mode: "line"` and tune `bar_thickness` + HSV.
+- If overlay does not update, test `GET http://127.0.0.1:8765/v1/face-state` in browser.
+
+---
+

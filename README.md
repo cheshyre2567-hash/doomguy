@@ -58,3 +58,35 @@ curl -X POST http://127.0.0.1:8765/v1/health-sample \
   -d '{"game_id":"local","health_percent":73,"confidence":0.95}'
 ```
 
+
+## Run OBS -> relay -> overlay end-to-end
+
+1. Start local overlay server:
+
+```bash
+python examples/local_overlay_server.py
+```
+
+2. Enable OBS WebSocket (Tools -> WebSocket Server Settings).
+
+3. Start OBS relay bridge (reads `GAME_FEED`, computes health, POSTs to server):
+
+```bash
+pip install obsws-python opencv-python numpy requests
+python examples/obs_to_overlay_relay.py --profile game-example-line
+```
+
+4. In OBS Browser Source `OVERLAY_FACE_OUTPUT`, set URL:
+
+```text
+http://127.0.0.1:8765/overlay
+```
+
+If OBS websocket needs password/host/port, set env vars:
+
+```bash
+export OBS_HOST=127.0.0.1
+export OBS_PORT=4455
+export OBS_PASSWORD='your_password'
+```
+
