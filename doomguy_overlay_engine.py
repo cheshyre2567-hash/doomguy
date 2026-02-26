@@ -33,6 +33,7 @@ class DoomguyFaceEngine:
 
     _LOOK_SEQUENCE: tuple[LookDirection, ...] = ("center", "left", "center", "right")
     _LOOK_TO_INDEX: dict[LookDirection, int] = {"left": 0, "center": 1, "right": 2}
+    _OUCH_DAMAGE_THRESHOLD = 25
 
     def __init__(self) -> None:
         self._look_cursor = 0
@@ -79,7 +80,7 @@ class DoomguyFaceEngine:
 
         h = max(0, min(100, int(health_percent)))
 
-        if h < self._last_health:
+        if h < self._last_health and (self._last_health - h) >= self._OUCH_DAMAGE_THRESHOLD:
             self.notify_damage(self._last_health - h)
         self._last_health = h
 

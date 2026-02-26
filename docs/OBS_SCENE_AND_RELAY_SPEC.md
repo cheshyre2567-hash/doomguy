@@ -157,6 +157,7 @@ Each game uses a profile object with:
 - `direction`: `left_to_right` or `right_to_left`
 - `smoothing_window`: rolling sample count (recommended 5)
 - `damage_drop_threshold`: minimum % drop to emit damage event (recommended 2)
+- `hud_anchor` (optional): fixed pixel gate `{x,y,color_bgr,tolerance}` used to detect if HUD is visible.
 
 See `config/game_profiles.example.json` for a canonical template.
 
@@ -175,6 +176,7 @@ Payload:
   "game_id": "apex",
   "timestamp_ms": 1737000000000,
   "health_percent": 73,
+  "hud_anchor_visible": true,
   "confidence": 0.94,
   "source": {
     "scene": "HUD_CAPTURE_SCENE",
@@ -186,6 +188,7 @@ Payload:
 Rules:
 
 - Clamp `health_percent` to 0-100.
+- If `hud_anchor_visible` is false, renderer may hide the face entirely.
 - If `confidence < 0.70`, server should ignore sample (or hold last good value).
 - Missing sample timeout: 600 ms; hold previous frame.
 
