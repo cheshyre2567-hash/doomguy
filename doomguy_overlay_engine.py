@@ -28,7 +28,7 @@ class DoomguyFaceEngine:
 
     - Cycles look direction in this order: center -> left -> center -> right -> ...
     - Uses STFSTxx frame sets for health buckets.
-    - Uses STFPAINx for damage pulses based on active look direction.
+    - Uses STFOUCHx for damage pulses based on current health bucket.
     """
 
     _LOOK_SEQUENCE: tuple[LookDirection, ...] = ("center", "left", "center", "right")
@@ -68,7 +68,7 @@ class DoomguyFaceEngine:
         """Trigger a pain animation pulse.
 
         amount is currently only semantic (future expansion). pain_ticks controls how
-        many update ticks STFPAINx should remain active.
+        many update ticks STFOUCHx should remain active.
         """
 
         if amount > 0:
@@ -87,6 +87,7 @@ class DoomguyFaceEngine:
         self._look_cursor = (self._look_cursor + 1) % len(self._LOOK_SEQUENCE)
 
         look_index = self._LOOK_TO_INDEX[look]
+        bucket = self.health_to_bucket(h)
 
         if h <= 0:
             return FaceState(
@@ -102,12 +103,11 @@ class DoomguyFaceEngine:
             return FaceState(
                 look=look,
                 health_percent=h,
-                health_bucket=self.health_to_bucket(h),
-                frame_name=f"STFPAIN{look_index}",
+                health_bucket=bucket,
+                frame_name=f"STFOUCH{bucket}",
                 is_pain=True,
             )
 
-        bucket = self.health_to_bucket(h)
         return FaceState(
             look=look,
             health_percent=h,
