@@ -23,7 +23,17 @@
       },
       "direction": "left_to_right",
       "smoothing_window": 5,
-      "damage_drop_threshold": 2
+      "damage_drop_threshold": 2,
+      "hud_anchor": {
+        "x": 100,
+        "y": 100,
+        "color_bgr": [
+          255,
+          255,
+          255
+        ],
+        "tolerance": 20
+      }
     },
     {
       "id": "game-example-rtl",
@@ -48,7 +58,17 @@
       },
       "direction": "right_to_left",
       "smoothing_window": 5,
-      "damage_drop_threshold": 3
+      "damage_drop_threshold": 3,
+      "hud_anchor": {
+        "x": 100,
+        "y": 100,
+        "color_bgr": [
+          255,
+          255,
+          255
+        ],
+        "tolerance": 20
+      }
     },
     {
       "id": "game-example-line",
@@ -78,7 +98,17 @@
       },
       "direction": "left_to_right",
       "smoothing_window": 5,
-      "damage_drop_threshold": 2
+      "damage_drop_threshold": 2,
+      "hud_anchor": {
+        "x": 100,
+        "y": 100,
+        "color_bgr": [
+          255,
+          255,
+          255
+        ],
+        "tolerance": 20
+      }
     }
   ]
 }

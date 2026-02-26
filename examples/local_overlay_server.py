@@ -36,6 +36,7 @@ latest = {
     "health_bucket": 0,
     "look": "center",
     "is_pain": False,
+    "hud_anchor_visible": True,
     "updated_at_ms": int(time.time() * 1000),
 }
 
@@ -73,6 +74,43 @@ def extract_health_percent(payload: dict) -> int:
 
     return 100
 
+
+def extract_hud_anchor_visible(payload: dict) -> bool:
+    """Extract HUD visibility gate from relay payload.
+
+    Supported keys:
+    - hud_anchor_visible (preferred)
+    - state.hud_anchor_visible
+    - sample.hud_anchor_visible
+
+    Defaults to True when missing or invalid for backwards compatibility.
+    """
+
+    candidates: list[object] = [payload.get("hud_anchor_visible")]
+
+    state_obj = payload.get("state")
+    if isinstance(state_obj, dict):
+        candidates.append(state_obj.get("hud_anchor_visible"))
+
+    sample_obj = payload.get("sample")
+    if isinstance(sample_obj, dict):
+        candidates.append(sample_obj.get("hud_anchor_visible"))
+
+    for value in candidates:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"1", "true", "yes", "on"}:
+                return True
+            if lowered in {"0", "false", "no", "off"}:
+                return False
+        if isinstance(value, (int, float)):
+            return bool(value)
+
+    return True
+
+
 OVERLAY_HTML = """<!doctype html>
 <html>
   <head>
@@ -101,6 +139,7 @@ OVERLAY_HTML = """<!doctype html>
       async function tick() {
         const r = await fetch('/v1/face-state', { cache: 'no-store' });
         const s = await r.json();
+        img.style.display = s.hud_anchor_visible === false ? 'none' : 'block';
         if (s.frame && s.frame !== last) {
           last = s.frame;
           img.src = '/' + s.frame + '.png';
@@ -164,6 +203,7 @@ class Handler(BaseHTTPRequestHandler):
         payload = json.loads(raw.decode("utf-8") if raw else "{}")
 
         health_percent = extract_health_percent(payload)
+        hud_anchor_visible = extract_hud_anchor_visible(payload)
         st = engine.update(health_percent)
         out = {
             "frame": st.frame_name,
@@ -171,6 +211,7 @@ class Handler(BaseHTTPRequestHandler):
             "health_bucket": st.health_bucket,
             "look": st.look,
             "is_pain": st.is_pain,
+            "hud_anchor_visible": hud_anchor_visible,
             "updated_at_ms": int(time.time() * 1000),
         }
 

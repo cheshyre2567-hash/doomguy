@@ -83,10 +83,16 @@ python examples/obs_to_overlay_relay.py --profile game-example-line --source-nam
 ```
 
 
-For coordinate calibration debugging, run the 30-second overlay helper (writes `debug_last_frame.png` with start/end markers and line):
+For coordinate calibration debugging, run the 30-second overlay helper (writes `debug_last_frame.png` with health markers and the optional `hud_anchor` point):
 
 ```bash
 python examples/obs_to_overlay_debug.py --profile game-example-line
+```
+
+You can add a `hud_anchor` in your profile so the face hides while menus are open (relay sends `hud_anchor_visible=false` when the pixel no longer matches):
+
+```json
+"hud_anchor": { "x": 100, "y": 100, "color_bgr": [255, 255, 255], "tolerance": 20 }
 ```
 
 If you previously saw `GetSourceScreenshot ... imageWidth ... minimum of 8`, pull latest code and rerun.

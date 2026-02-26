@@ -91,11 +91,36 @@ def main() -> None:
             printed_shape = True
 
         dbg = frame_bgr.copy()
-        sx, sy = int(profile["bar_start"]["x"]), int(profile["bar_start"]["y"])
-        ex, ey = int(profile["bar_end"]["x"]), int(profile["bar_end"]["y"])
-        cv2.circle(dbg, (sx, sy), 7, (0, 255, 0), -1)
-        cv2.circle(dbg, (ex, ey), 7, (0, 0, 255), -1)
-        cv2.line(dbg, (sx, sy), (ex, ey), (255, 0, 255), 2)
+
+        if "bar_start" in profile and "bar_end" in profile:
+            sx, sy = int(profile["bar_start"]["x"]), int(profile["bar_start"]["y"])
+            ex, ey = int(profile["bar_end"]["x"]), int(profile["bar_end"]["y"])
+            cv2.circle(dbg, (sx, sy), 7, (0, 255, 0), -1)
+            cv2.circle(dbg, (ex, ey), 7, (0, 0, 255), -1)
+            cv2.line(dbg, (sx, sy), (ex, ey), (255, 0, 255), 2)
+        elif "health_roi" in profile:
+            roi = profile["health_roi"]
+            x, y, w, h = int(roi["x"]), int(roi["y"]), int(roi["width"]), int(roi["height"])
+            cv2.rectangle(dbg, (x, y), (x + w, y + h), (255, 0, 255), 2)
+
+        anchor = profile.get("hud_anchor")
+        if isinstance(anchor, dict):
+            ax, ay = int(anchor.get("x", -1)), int(anchor.get("y", -1))
+            if 0 <= ay < frame_bgr.shape[0] and 0 <= ax < frame_bgr.shape[1]:
+                sampled = frame_bgr[ay, ax].tolist()
+                cv2.circle(dbg, (ax, ay), 6, (0, 255, 255), -1)
+                cv2.putText(
+                    dbg,
+                    f"HUD anchor BGR={sampled}",
+                    (max(5, ax + 10), max(20, ay - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 255, 255),
+                    1,
+                    cv2.LINE_AA,
+                )
+                print(f"hud_anchor sample at ({ax},{ay}): BGR={sampled}")
+
         cv2.imwrite(str(out_path), dbg)
 
         time.sleep(period)

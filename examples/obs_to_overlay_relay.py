@@ -146,6 +146,43 @@ def estimate_health_line(frame_bgr: np.ndarray, profile: dict) -> tuple[int, flo
     return clamp_health(health), confidence
 
 
+
+
+def resolve_hud_anchor_visible(frame_bgr: np.ndarray, profile: dict) -> bool:
+    """Return True when the configured HUD anchor pixel matches expected color.
+
+    Profile shape:
+      "hud_anchor": {
+        "x": 100,
+        "y": 100,
+        "color_bgr": [12, 34, 56],
+        "tolerance": 20
+      }
+
+    If hud_anchor is omitted, this returns True (feature disabled).
+    """
+
+    anchor = profile.get("hud_anchor")
+    if not isinstance(anchor, dict):
+        return True
+
+    try:
+        x = int(anchor["x"])
+        y = int(anchor["y"])
+        expected = np.array(anchor["color_bgr"], dtype=np.int16)
+    except (KeyError, TypeError, ValueError):
+        return True
+
+    if expected.shape != (3,):
+        return True
+
+    if y < 0 or y >= frame_bgr.shape[0] or x < 0 or x >= frame_bgr.shape[1]:
+        return False
+
+    tolerance = max(0, int(anchor.get("tolerance", 20)))
+    sampled = frame_bgr[y, x].astype(np.int16)
+    return bool(np.all(np.abs(sampled - expected) <= tolerance))
+
 def load_profile(path: Path, profile_id: str) -> dict:
     obj = json.loads(path.read_text())
     for p in obj.get("profiles", []):
@@ -227,15 +264,17 @@ def main() -> None:
         else:
             health, confidence = estimate_health_roi(frame_bgr, profile)
 
+        hud_anchor_visible = resolve_hud_anchor_visible(frame_bgr, profile)
         payload = {
             "game_id": profile["id"],
             "timestamp_ms": int(time.time() * 1000),
             "health_percent": health,
+            "hud_anchor_visible": hud_anchor_visible,
             "source": {"scene": scene_name},
         }
 
         requests.post(args.overlay_url, json=payload, timeout=1.0)
-        print(f"health={health:3d} confidence={confidence:.2f}")
+        print(f"health={health:3d} confidence={confidence:.2f} hud_anchor_visible={hud_anchor_visible}")
         time.sleep(period)
 
 
