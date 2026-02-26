@@ -2,7 +2,7 @@
 
 This repository now includes:
 
-- PNG face assets (`STFST*`, `STFPAIN*`, etc.)
+- PNG face assets (`STFST*`, `STFOUCH*`, etc.)
 - A reusable state engine (`doomguy_overlay_engine.py`) that maps health + damage into a frame name
 - A strict OBS + relay integration specification (`docs/OBS_SCENE_AND_RELAY_SPEC.md`)
 - Example multi-game profile config (`config/game_profiles.example.json`)
@@ -15,7 +15,7 @@ from doomguy_overlay_engine import DoomguyFaceEngine
 engine = DoomguyFaceEngine()
 
 state = engine.update(100)  # -> STFST01 (healthy, center)
-state = engine.update(75)   # damage drop triggers pain frame based on look direction
+state = engine.update(75)   # damage drop triggers STFOUCH frame based on health bucket
 print(state.frame_name)
 ```
 
@@ -55,7 +55,7 @@ Example test sample:
 ```bash
 curl -X POST http://127.0.0.1:8765/v1/health-sample \
   -H 'Content-Type: application/json' \
-  -d '{"game_id":"local","health_percent":73,"confidence":0.95}'
+  -d '{"game_id":"local","health_percent":73}'
 ```
 
 

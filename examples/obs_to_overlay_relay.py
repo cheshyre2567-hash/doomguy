@@ -231,7 +231,6 @@ def main() -> None:
             "game_id": profile["id"],
             "timestamp_ms": int(time.time() * 1000),
             "health_percent": health,
-            "confidence": round(float(confidence), 3),
             "source": {"scene": scene_name},
         }
 
