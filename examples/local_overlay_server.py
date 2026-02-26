@@ -39,6 +39,40 @@ latest = {
     "updated_at_ms": int(time.time() * 1000),
 }
 
+
+def extract_health_percent(payload: dict) -> int:
+    """Extract health from multiple payload shapes for compatibility.
+
+    Supported keys:
+    - health_percent (preferred)
+    - health
+    - state.health_percent
+    - sample.health_percent
+    """
+
+    candidates: list[object] = [
+        payload.get("health_percent"),
+        payload.get("health"),
+    ]
+
+    state_obj = payload.get("state")
+    if isinstance(state_obj, dict):
+        candidates.append(state_obj.get("health_percent"))
+
+    sample_obj = payload.get("sample")
+    if isinstance(sample_obj, dict):
+        candidates.append(sample_obj.get("health_percent"))
+
+    for value in candidates:
+        if value is None:
+            continue
+        try:
+            return max(0, min(100, int(float(value))))
+        except (TypeError, ValueError):
+            continue
+
+    return 100
+
 OVERLAY_HTML = """<!doctype html>
 <html>
   <head>
@@ -99,7 +133,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
 
-        if path == "/overlay":
+        if path in {"/", "/overlay"}:
             self._send_bytes(HTTPStatus.OK, OVERLAY_HTML.encode("utf-8"), "text/html; charset=utf-8")
             return
 
@@ -129,8 +163,8 @@ class Handler(BaseHTTPRequestHandler):
         raw = self.rfile.read(content_length)
         payload = json.loads(raw.decode("utf-8") if raw else "{}")
 
-        health_percent = int(payload.get("health_percent", 100))
-        st = engine.update(max(0, min(100, health_percent)))
+        health_percent = extract_health_percent(payload)
+        st = engine.update(health_percent)
         out = {
             "frame": st.frame_name,
             "health_percent": st.health_percent,
