@@ -156,6 +156,7 @@ def resolve_hud_anchor_visible(frame_bgr: np.ndarray, profile: dict) -> bool:
         "x": 100,
         "y": 100,
         "color_bgr": [12, 34, 56],
+        "color_bgr_options": [[12, 34, 56], [90, 120, 200]],
         "tolerance": 20
       }
 
@@ -169,11 +170,25 @@ def resolve_hud_anchor_visible(frame_bgr: np.ndarray, profile: dict) -> bool:
     try:
         x = int(anchor["x"])
         y = int(anchor["y"])
-        expected = np.array(anchor["color_bgr"], dtype=np.int16)
     except (KeyError, TypeError, ValueError):
         return True
 
-    if expected.shape != (3,):
+    color_options_raw = anchor.get("color_bgr_options")
+    if isinstance(color_options_raw, list) and color_options_raw:
+        raw_candidates = color_options_raw
+    else:
+        raw_candidates = [anchor.get("color_bgr")]
+
+    candidates: list[np.ndarray] = []
+    for raw in raw_candidates[:3]:
+        try:
+            arr = np.array(raw, dtype=np.int16)
+        except (TypeError, ValueError):
+            continue
+        if arr.shape == (3,):
+            candidates.append(arr)
+
+    if not candidates:
         return True
 
     if y < 0 or y >= frame_bgr.shape[0] or x < 0 or x >= frame_bgr.shape[1]:
@@ -181,7 +196,10 @@ def resolve_hud_anchor_visible(frame_bgr: np.ndarray, profile: dict) -> bool:
 
     tolerance = max(0, int(anchor.get("tolerance", 20)))
     sampled = frame_bgr[y, x].astype(np.int16)
-    return bool(np.all(np.abs(sampled - expected) <= tolerance))
+    for expected in candidates:
+        if np.all(np.abs(sampled - expected) <= tolerance):
+            return True
+    return False
 
 def load_profile(path: Path, profile_id: str) -> dict:
     obj = json.loads(path.read_text())

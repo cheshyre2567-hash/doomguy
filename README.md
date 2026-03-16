@@ -89,10 +89,16 @@ For coordinate calibration debugging, run the 30-second overlay helper (writes `
 python examples/obs_to_overlay_debug.py --profile game-example-line
 ```
 
-You can add a `hud_anchor` in your profile so the face hides while menus are open (relay sends `hud_anchor_visible=false` when the pixel no longer matches):
+You can add a `hud_anchor` in your profile so the face hides while menus are open (relay sends `hud_anchor_visible=false` when the pixel no longer matches). If the game rotates multiple possible HUD colors, use `color_bgr_options` with up to 3 entries:
 
 ```json
-"hud_anchor": { "x": 100, "y": 100, "color_bgr": [255, 255, 255], "tolerance": 20 }
+"hud_anchor": {
+  "x": 100,
+  "y": 100,
+  "color_bgr": [255, 255, 255],
+  "color_bgr_options": [[255, 255, 255], [250, 230, 80], [90, 200, 255]],
+  "tolerance": 20
+}
 ```
 
 If you previously saw `GetSourceScreenshot ... imageWidth ... minimum of 8`, pull latest code and rerun.
